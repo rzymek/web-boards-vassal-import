@@ -5,19 +5,25 @@ import javax.xml.parsers.SAXParserFactory
 import org.xml.sax.Attributes
 import org.xml.sax.SAXException
 import org.xml.sax.helpers.DefaultHandler
+import java.util.Stack
 
 class Handler extends DefaultHandler {
 	var indent = 0
 	val INDENT = '   ';
-	val struct = HashMultiset.create
+	public val struct = HashMultiset.create
+	val stack = new Stack
 
 	override startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
 		val name = qName.substring(qName.lastIndexOf('.') + 1)
-		println((0 ..< indent).map[INDENT].join + name);
+		stack.push(name)
+		val path = stack.join('/');
+		struct.add(stack.clone)
+//		println((0 ..< indent).map[INDENT].join + path);
 		indent = indent + 1;
 	}
 
 	override endElement(String uri, String localName, String qName) throws SAXException {
+		stack.pop
 		indent = indent - 1;
 	}
 
@@ -28,6 +34,7 @@ class Importer {
 		val parser = SAXParserFactory.newInstance.newSAXParser
 		val handler = new Handler
 		parser.parse("buildFile", handler);
+		println(handler.struct.toString);
 	}
 
 }
