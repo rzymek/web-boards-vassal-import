@@ -1,40 +1,88 @@
 package org.webboards.vassal
 
-import com.google.common.collect.HashMultiset
-import javax.xml.parsers.SAXParserFactory
-import org.xml.sax.Attributes
-import org.xml.sax.SAXException
-import org.xml.sax.helpers.DefaultHandler
-import java.util.Stack
+import com.google.common.collect.HashMultimap
+import java.util.Iterator
+import java.util.NoSuchElementException
+import javax.xml.parsers.DocumentBuilderFactory
+import org.junit.Test
+import org.w3c.dom.Element
+import org.w3c.dom.Node
+import org.w3c.dom.NodeList
 
-class Handler extends DefaultHandler {
-	var indent = 0
-	val INDENT = '   ';
-	public val struct = HashMultiset.create
-	val stack = new Stack
-
-	override startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
-		val name = qName.substring(qName.lastIndexOf('.') + 1)
-		stack.push(name)
-		val path = stack.join('/');
-		struct.add(stack.clone)
-//		println((0 ..< indent).map[INDENT].join + path);
-		indent = indent + 1;
-	}
-
-	override endElement(String uri, String localName, String qName) throws SAXException {
-		stack.pop
-		indent = indent - 1;
-	}
-
-}
+import static extension org.webboards.vassal.NodeListIterator.*
 
 class Importer {
 	def static void main(String[] args) {
-		val parser = SAXParserFactory.newInstance.newSAXParser
-		val handler = new Handler
-		parser.parse("buildFile", handler);
-		println(handler.struct.toString);
+		new Importer().run
+	}
+	
+	@Test
+	def void run() {
+		val parser = DocumentBuilderFactory.newInstance.newDocumentBuilder
+		val doc = parser.parse(Importer.getResourceAsStream("/buildFile"));
+		println(printNodes(doc.documentElement));
+	}
+	
+	def static printNodes(Element node) { 
+		val children = node.childNodes
+			.iterator
+			.filter(Element);
+		val HashMultimap<String, Element> map = HashMultimap.create
+		children.map[it.shortName -> it]
+			.forEach[map.put(key, value)]
+		val types = map.keys.entrySet
+			.map[element -> if(count > 1) {
+				element+'Array' 
+			}else{
+				element 
+			}];
+		'''
+		class «node.shortName» {
+			private node: any;
+			constructor(node:any) {
+				this.node = node;
+			}  
+			«types.map['''«key»():any { return this.node['«map.get(key).head.tagName»'];}'''].join('\n')»
+		}
+«««		«types.map[key].join('\n')»
+		'''		
+	}
+	
+	def static getShortName(Element it) {
+		tagName.substring(tagName.lastIndexOf('.') + 1)
+	}
+}
+
+class NodeListIterator implements Iterator<Node>, Iterable<Node> {
+	var index = 0
+	NodeList n
+
+	new(NodeList n) {
+		this.n = n;
 	}
 
+	override hasNext() {
+		index < n.length
+	}
+
+	override next() {
+		if (hasNext) {
+			val item = n.item(index);
+			index = index + 1;
+			return item;
+		} else {
+			throw new NoSuchElementException();
+		}
+	}
+
+	override remove() {
+		throw new UnsupportedOperationException();
+	}
+
+	override iterator() {
+		new NodeListIterator(n);
+	}
+	static def Iterable<Node> iterator(NodeList n) {
+		new NodeListIterator(n);
+	}
 }
