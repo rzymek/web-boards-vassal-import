@@ -1,8 +1,16 @@
 package org.webboards.vassal
 
+import VASSAL.build.AbstractBuildable
+import VASSAL.build.module.Map
+import VASSAL.build.module.map.boardPicker.board.HexGrid
+import VASSAL.build.widget.PieceSlot
+import VASSAL.counters.Decorator
+import VASSAL.tools.menu.MenuBarProxy
+import VASSAL.tools.menu.MenuManager
 import com.google.common.collect.HashMultimap
 import java.util.Iterator
 import java.util.NoSuchElementException
+import javax.swing.JFrame
 import javax.xml.parsers.DocumentBuilderFactory
 import org.junit.Test
 import org.w3c.dom.Element
@@ -11,6 +19,18 @@ import org.w3c.dom.NodeList
 
 import static extension org.webboards.vassal.NodeListIterator.*
 
+class XMenuManager extends MenuManager {
+    val editorBar = new MenuBarProxy();
+	
+	override getMenuBarFor(JFrame fc) {
+		editorBar.createPeer
+	}
+	
+	override getMenuBarProxyFor(JFrame fc) {
+		editorBar
+	}
+
+  }
 class Importer {
 	def static void main(String[] args) {
 		new Importer().run
@@ -18,6 +38,24 @@ class Importer {
 	
 	@Test
 	def void run() {
+		val mod = Imp.run
+		val map = mod.buildables.filter(Map).filter[mapName=='Main Map'].head.boardPicker.getBoard('Map')
+		println(map)
+//		val board = map.boards
+		val grid = map.grid as HexGrid
+		println(map.size);		
+		println(grid.hexSize);
+		
+		println(mod.recurse(HexGrid))
+		val pieces = mod.recurse(PieceSlot).map[it.piece].filter(Decorator).map[it.inner].join('\n')
+		println(pieces)
+	}
+	
+	def <T> Iterable<T> recurse(AbstractBuildable b, Class<T> type) {
+		b.buildables.filter(type) + b.buildables.filter(AbstractBuildable).map[recurse(type)].flatten
+	}
+	
+	def void run1() {
 		val parser = DocumentBuilderFactory.newInstance.newDocumentBuilder
 		val doc = parser.parse(Importer.getResourceAsStream("/buildFile"));
 		println(printNodes(doc.documentElement));
