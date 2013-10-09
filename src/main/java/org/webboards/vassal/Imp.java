@@ -1,8 +1,7 @@
 package org.webboards.vassal;
 
-import org.junit.Test;
-
 import VASSAL.build.GameModule;
+import VASSAL.counters.XMenuManager;
 import VASSAL.launch.BasicModule;
 import VASSAL.tools.DataArchive;
 
