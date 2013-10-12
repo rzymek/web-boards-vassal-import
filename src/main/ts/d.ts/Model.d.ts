@@ -5,6 +5,16 @@ interface Module {
 
 interface Board {
 	image: string;
+	width: number;
+	height: number;
+	grid: Grid;
+} 
+
+interface Grid {
+	hexSize: number;
+	hexWidth: number;
+	originX: number;
+	originY: number;
 } 
 
 interface Pieces {

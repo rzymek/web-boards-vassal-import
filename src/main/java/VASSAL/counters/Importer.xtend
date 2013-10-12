@@ -2,16 +2,19 @@ package VASSAL.counters
 
 import VASSAL.build.AbstractBuildable
 import VASSAL.build.module.Map
+import VASSAL.build.module.map.boardPicker.board.HexGrid
 import VASSAL.build.widget.ListWidget
 import VASSAL.build.widget.PieceSlot
 import com.google.gson.GsonBuilder
 import org.apache.commons.lang.StringUtils
 import org.junit.Test
 import org.webboards.vassal.Board
+import org.webboards.vassal.Grid
 import org.webboards.vassal.Module
 import org.webboards.vassal.ModuleLoader
 import org.webboards.vassal.Piece
 import org.webboards.vassal.Pieces
+import VASSAL.build.module.map.boardPicker.board.MapGrid
 
 class Importer {
 	val gson = new GsonBuilder()
@@ -31,9 +34,6 @@ class Importer {
 				new Pieces() => [
 					it.category = list.getAttributeValueString("entryName")
 					it.list = list.recurse(PieceSlot).map[piece].map[piece|
-//						if(piece.images.size > 1) {
-//							println(piece);
-//						}
 						new Piece() => [
 							it.name = piece.name
 							it.images = piece.images						
@@ -47,9 +47,23 @@ class Importer {
 			.map[board|
 				new Board() => [
 					it.image = board.fileName
+					it.width = board.size.width
+					it.height = board.size.height
+					it.grid = board.grid.convert
 				]
 			].head
 		println(gson.toJson(module))	
+	}
+	def dispatch convert(HexGrid grid){
+		new Grid() => [ 
+			it.hexSize = grid.hexSize
+			it.hexWidth = grid.hexWidth
+			it.originX = grid.origin.x
+			it.originY = grid.origin.y
+		]
+	}
+	def dispatch Grid convert(MapGrid grid){
+		throw new RuntimeException("Unsupported grid: "+grid)
 	}
 	
 	def dispatch Iterable<String> getImages(Embellishment e) {

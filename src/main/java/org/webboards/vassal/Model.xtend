@@ -11,6 +11,17 @@ class Module {
 @TypeScript
 class Board {
 	public String image
+	public Integer width
+	public Integer height
+	public Grid grid
+}
+
+@TypeScript
+class Grid {
+	public double hexSize
+	public double hexWidth
+	public int originX
+	public int originY
 }
 
 @TypeScript
