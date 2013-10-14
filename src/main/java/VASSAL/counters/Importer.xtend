@@ -6,7 +6,9 @@ import VASSAL.build.module.map.boardPicker.board.HexGrid
 import VASSAL.build.module.map.boardPicker.board.MapGrid
 import VASSAL.build.widget.ListWidget
 import VASSAL.build.widget.PieceSlot
+import com.google.common.io.Files
 import com.google.gson.GsonBuilder
+import java.io.File
 import java.util.Arrays
 import org.apache.commons.lang.StringUtils
 import org.junit.Test
@@ -16,6 +18,7 @@ import org.webboards.vassal.Module
 import org.webboards.vassal.ModuleLoader
 import org.webboards.vassal.Piece
 import org.webboards.vassal.Pieces
+import java.nio.charset.StandardCharsets
 
 class Importer {
 	val gson = new GsonBuilder()
@@ -40,9 +43,12 @@ class Importer {
 							it.name = piece.name
 							it.images = piece.images						
 						]
+					].filter[//bastgne
+						!name.toLowerCase.endsWith("-tar")
 					].toList 
 				]
-			].toList 
+			].filter[!list.empty]
+			.toList 
 		module.board = mod.recurse(Map)
 			.filter[mapName=='Main Map']
 			.map[boardPicker.configureComponents]
@@ -57,7 +63,14 @@ class Importer {
 					it.grid = board.grid.convert
 				]
 			].head
-		println(gson.toJson(module))	
+		
+		val json = gson.toJson(module);
+		Files.write(
+			json, 
+			new File("/home/rzymek/devel/github/mboards/public/games/bastogne/game.json"), 
+			StandardCharsets.UTF_8
+		);
+		println(json);		
 	}
 	def dispatch convert(HexGrid grid){
 		new Grid() => [ 
