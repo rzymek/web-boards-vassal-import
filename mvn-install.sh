@@ -2,8 +2,8 @@
 mkdir tmp 
 cd tmp
 set -e
-#wget -c --content-disposition -O vassal.zip http://sourceforge.net/projects/vassalengine/files/latest/download
-#unzip vassal.zip
+wget -c --content-disposition -O vassal.zip http://sourceforge.net/projects/vassalengine/files/latest/download
+unzip vassal.zip
 version=`echo VASSAL-*/ | cut -d- -f2 | cut -d/ -f1`
 Vengine=`echo VASSAL-*/lib/Vengine.jar`
 echo '<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
