@@ -1,6 +1,6 @@
 interface Module {
-	pieces: Pieces[];
 	board: Board;
+	pieces: Pieces[];
 } 
 
 interface Board {

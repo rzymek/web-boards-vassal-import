@@ -4,8 +4,8 @@ import de.oehme.xtend.contrib.typescript.TypeScript
 
 @TypeScript
 class Module {
-	public Pieces[] pieces
 	public Board board
+	public Pieces[] pieces
 }
 
 @TypeScript
