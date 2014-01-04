@@ -27,7 +27,8 @@ class Importer {
 	
 	@Test
 	def void run() {
-		val modPath = "/home/rzymek/devel/github/vassal-import/Bastogne_v1_3.vmod"		
+		println("Vassal Counter Sheet...")
+		val modPath = "/home/rzymek/tmp/bfg/BattleForGermany.vmod"///home/rzymek/devel/github/vassal-import/Bastogne_v1_3.vmod"		
 		val mod = ModuleLoader.instace.load(modPath)
 		val module = new Module();
 		module.pieces = mod.recurse(ListWidget).map[list|
