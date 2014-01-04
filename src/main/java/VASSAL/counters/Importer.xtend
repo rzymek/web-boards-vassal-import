@@ -3,9 +3,13 @@ package VASSAL.counters
 import VASSAL.build.AbstractBuildable
 import VASSAL.build.module.Map
 import VASSAL.build.module.map.boardPicker.board.HexGrid
+import VASSAL.build.module.map.boardPicker.board.MapGrid
 import VASSAL.build.widget.ListWidget
 import VASSAL.build.widget.PieceSlot
+import com.google.common.io.Files
 import com.google.gson.GsonBuilder
+import java.io.File
+import java.util.Arrays
 import org.apache.commons.lang.StringUtils
 import org.junit.Test
 import org.webboards.vassal.Board
@@ -14,7 +18,7 @@ import org.webboards.vassal.Module
 import org.webboards.vassal.ModuleLoader
 import org.webboards.vassal.Piece
 import org.webboards.vassal.Pieces
-import VASSAL.build.module.map.boardPicker.board.MapGrid
+import java.nio.charset.StandardCharsets
 
 class Importer {
 	val gson = new GsonBuilder()
@@ -28,7 +32,9 @@ class Importer {
 	@Test
 	def void run() {
 		println("Vassal Counter Sheet...")
-		val modPath = "/home/rzymek/tmp/bfg/BattleForGermany.vmod"///home/rzymek/devel/github/vassal-import/Bastogne_v1_3.vmod"		
+		val modPath = "/home/rzymek/tmp/bfg/BattleForGermany.vmod"		
+//		val modPath = "/home/rzymek/devel/github/vassal-import/Bastogne_v1_3.vmod";
+//		val modPath = "/home/rzymek/devel/github/vassal-import/RedWinter_v1.1b06.vmod";
 		val mod = ModuleLoader.instace.load(modPath)
 		val module = new Module();
 		module.pieces = mod.recurse(ListWidget).map[list|
@@ -39,12 +45,18 @@ class Importer {
 							it.name = piece.name
 							it.images = piece.images						
 						]
+					].filter[//bastgne
+						!name.toLowerCase.endsWith("-tar")
 					].toList 
 				]
-			].toList 
+			].filter[!list.empty]
+			.toList 
 		module.board = mod.recurse(Map)
 			.filter[mapName=='Main Map']
-			.map[boardPicker.getBoard('Map')]
+			.map[boardPicker.configureComponents]
+			.map[Arrays::asList(it)]
+			.flatten
+			.filter(typeof(VASSAL.build.module.map.boardPicker.Board))
 			.map[board|
 				new Board() => [
 					it.image = board.fileName
@@ -53,7 +65,14 @@ class Importer {
 					it.grid = board.grid.convert
 				]
 			].head
-		println(gson.toJson(module))	
+		
+		val json = gson.toJson(module);
+		Files.write(
+			json, 
+			new File("/home/rzymek/devel/github/mboards/public/games/bastogne/game.json"), 
+			StandardCharsets.UTF_8
+		);
+		println(json);		
 	}
 	def dispatch convert(HexGrid grid){
 		new Grid() => [ 
@@ -64,7 +83,8 @@ class Importer {
 		]
 	}
 	def dispatch Grid convert(MapGrid grid){
-		throw new RuntimeException("Unsupported grid: "+grid)
+		System.err.println("Unsupported grid: "+grid.class.simpleName)
+		return null
 	}
 	
 	def dispatch Iterable<String> getImages(Embellishment e) {
