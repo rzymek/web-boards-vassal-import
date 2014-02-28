@@ -4,11 +4,13 @@ import VASSAL.build.AbstractBuildable
 import VASSAL.build.module.Map
 import VASSAL.build.module.map.boardPicker.board.HexGrid
 import VASSAL.build.module.map.boardPicker.board.MapGrid
+import VASSAL.build.module.map.boardPicker.board.ZonedGrid
 import VASSAL.build.widget.ListWidget
 import VASSAL.build.widget.PieceSlot
 import com.google.common.io.Files
 import com.google.gson.GsonBuilder
 import java.io.File
+import java.nio.charset.StandardCharsets
 import java.util.Arrays
 import org.apache.commons.lang.StringUtils
 import org.junit.Test
@@ -18,7 +20,6 @@ import org.webboards.vassal.Module
 import org.webboards.vassal.ModuleLoader
 import org.webboards.vassal.Piece
 import org.webboards.vassal.Pieces
-import java.nio.charset.StandardCharsets
 
 class Importer {
 	val gson = new GsonBuilder()
@@ -32,9 +33,10 @@ class Importer {
 	@Test
 	def void run() {
 		println("Vassal Counter Sheet...")
-		val modPath = "/home/rzymek/tmp/bfg/BattleForGermany.vmod"		
+//		val modPath = "/home/rzymek/tmp/bfg/BattleForGermany.vmod"		
+//		val modPath = "/home/rzymek/Dropbox/devel/board/pieklo-na-pacyfiku/Kryptonim_Lew_Morski.vmod"
 //		val modPath = "/home/rzymek/devel/github/vassal-import/Bastogne_v1_3.vmod";
-//		val modPath = "/home/rzymek/devel/github/vassal-import/RedWinter_v1.1b06.vmod";
+		val modPath = "/home/rzymek/devel/github/vassal-import/RedWinter_v1.1b06.vmod";
 		val mod = ModuleLoader.instace.load(modPath)
 		val module = new Module();
 		module.pieces = mod.recurse(ListWidget).map[list|
@@ -45,8 +47,8 @@ class Importer {
 							it.name = piece.name
 							it.images = piece.images						
 						]
-					].filter[//bastgne
-						!name.toLowerCase.endsWith("-tar")
+//					].filter[//bastgne
+//						!name.toLowerCase.endsWith("-tar")
 					].toList 
 				]
 			].filter[!list.empty]
@@ -62,19 +64,24 @@ class Importer {
 					it.image = board.fileName
 					it.width = board.size.width
 					it.height = board.size.height
-					it.grid = board.grid.convert
+					it.grid = board.grid?.convert
 				]
 			].head
 		
 		val json = gson.toJson(module);
+		val target = new File("/home/rzymek/devel/github/mboards/public/games/red-winter/") => [mkdirs];
 		Files.write(
 			json, 
-			new File("/home/rzymek/devel/github/mboards/public/games/bastogne/game.json"), 
+			new File(target,"game.json"), 
 			StandardCharsets.UTF_8
 		);
 		println(json);		
 	}
-	def dispatch convert(HexGrid grid){
+	def dispatch Grid convert(ZonedGrid grid){
+		grid.zones.map[it.grid].filterNull.filter(HexGrid).head?.convert		
+	}
+	
+	def dispatch Grid convert(HexGrid grid){
 		new Grid() => [ 
 			it.hexSize = grid.hexSize
 			it.hexWidth = grid.hexWidth
@@ -83,8 +90,7 @@ class Importer {
 		]
 	}
 	def dispatch Grid convert(MapGrid grid){
-		System.err.println("Unsupported grid: "+grid.class.simpleName)
-		return null
+		throw new RuntimeException("Unsupported grid: "+grid.class.simpleName)
 	}
 	
 	def dispatch Iterable<String> getImages(Embellishment e) {
