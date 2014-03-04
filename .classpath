@@ -4,7 +4,6 @@
 	<classpathentry including="**/*.java" kind="src" path="src/main/xtend-gen"/>
 	<classpathentry excluding="**/*.java" kind="src" path="src/main/resources"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="lib" path="lib/vassal/Vengine.jar"/>
 	<classpathentry kind="lib" path="lib/aopalliance-1.0.jar"/>
 	<classpathentry kind="lib" path="lib/gson-2.2.2.jar"/>
 	<classpathentry kind="lib" path="lib/guava-15.0-rc1.jar"/>
@@ -16,5 +15,6 @@
 	<classpathentry kind="lib" path="lib/org.eclipse.xtend.standalone-2.4.2.jar"/>
 	<classpathentry kind="lib" path="lib/org.eclipse.xtext.xbase.lib-2.4.3.jar"/>
 	<classpathentry kind="lib" path="lib/xtend-contrib-typescript-0.1.1-SNAPSHOT.jar"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/vassal"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>

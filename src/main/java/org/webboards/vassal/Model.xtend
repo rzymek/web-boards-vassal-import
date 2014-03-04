@@ -6,6 +6,7 @@ import de.oehme.xtend.contrib.typescript.TypeScript
 class Module {
 	public Board board
 	public Pieces[] pieces
+	public Double counterScale;
 }
 
 @TypeScript
