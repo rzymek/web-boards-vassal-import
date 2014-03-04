@@ -1,6 +1,7 @@
 package VASSAL.counters
 
 import VASSAL.build.AbstractBuildable
+import VASSAL.build.GameModule
 import VASSAL.build.module.Map
 import VASSAL.build.module.map.boardPicker.board.HexGrid
 import VASSAL.build.module.map.boardPicker.board.MapGrid
@@ -9,9 +10,15 @@ import VASSAL.build.widget.ListWidget
 import VASSAL.build.widget.PieceSlot
 import com.google.common.io.Files
 import com.google.gson.GsonBuilder
+import java.awt.Dimension
+import java.io.BufferedReader
 import java.io.File
+import java.io.FileReader
 import java.nio.charset.StandardCharsets
 import java.util.Arrays
+import java.util.zip.ZipFile
+import javax.imageio.ImageIO
+import org.apache.commons.io.IOUtils
 import org.apache.commons.lang.StringUtils
 import org.junit.Test
 import org.webboards.vassal.Board
@@ -20,10 +27,6 @@ import org.webboards.vassal.Module
 import org.webboards.vassal.ModuleLoader
 import org.webboards.vassal.Piece
 import org.webboards.vassal.Pieces
-import org.apache.commons.io.IOUtils
-import java.io.BufferedReader
-import java.io.FileReader
-import VASSAL.build.GameModule
 
 class Importer {
 	val OUT_BASE = new File("/home/rzymek/devel/github/mboards/public/games/")
@@ -76,6 +79,16 @@ class Importer {
 				it.grid = board.grid?.convert
 			]
 		].head
+		val archive = new ZipFile(modPath.key);
+		var maxCounterSize = module.pieces.map[list.map[images.map[getImageSize(it, archive)].filterNull].flatten].flatten
+			.fold(new Dimension(0,0), [r,t|
+				new Dimension(
+					Math.max(r.width, t.width),
+					Math.max(r.height, t.height)
+				)
+			])
+		module.counterDim = maxCounterSize;	
+			
 		bastogne(module)
 		val json = gson.toJson(module);
 		val target = new File(OUT_BASE, modPath.value) => [mkdirs];
@@ -85,6 +98,28 @@ class Importer {
 			StandardCharsets.UTF_8
 		);
 		println(json);
+	}
+	
+	def getImageSize(String filename, ZipFile archive) {
+		val entry = archive.getEntry('images/'+filename)	
+		val in = ImageIO::createImageInputStream(archive.getInputStream(entry));
+		if(in == null)
+			return null;  
+		try {
+			val readers = ImageIO::getImageReaders(in);
+			if(readers.hasNext()) {
+				val reader = readers.next
+				reader.input = in;
+				return new Dimension(
+					reader.getWidth(0),
+					reader.getHeight(0)
+				);
+			} else {
+				throw new RuntimeException("can't read "+filename);
+			}
+		} finally {
+			in.close();
+		}
 	}
 
 	def bastogne(Module module) {
@@ -109,7 +144,10 @@ class Importer {
 		b.grid.hexWidth = b.grid.hexWidth * scale
 		b.grid.originX = (b.grid.originX * scale) as int
 		b.grid.originY = (b.grid.originY * scale) as int
-		mod.counterScale = scale
+		mod.counterDim = new Dimension(
+			(mod.counterDim.width * scale) as int,
+			(mod.counterDim.height * scale) as int
+		)
 		return mod
 	}
 

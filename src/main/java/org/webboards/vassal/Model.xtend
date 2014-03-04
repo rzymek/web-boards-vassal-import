@@ -1,15 +1,13 @@
 package org.webboards.vassal
 
-import de.oehme.xtend.contrib.typescript.TypeScript
+import java.awt.Dimension
 
-@TypeScript
 class Module {
 	public Board board
 	public Pieces[] pieces
-	public Double counterScale;
+	public Dimension counterDim;
 }
 
-@TypeScript
 class Board {
 	public String image
 	public Integer width
@@ -17,7 +15,6 @@ class Board {
 	public Grid grid
 }
 
-@TypeScript
 class Grid {
 	public double hexSize
 	public double hexWidth
@@ -25,13 +22,11 @@ class Grid {
 	public int originY
 }
 
-@TypeScript
 class Pieces {
 	public String category
 	public Piece[] list
 }
 
-@TypeScript
 class Piece {
 	public String name
 	public String[] images

@@ -1,7 +1,7 @@
 interface Module {
 	board: Board;
 	pieces: Pieces[];
-	counterScale: number;
+	counterDim: Dimension;
 } 
 
 interface Board {
