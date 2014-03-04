@@ -20,6 +20,7 @@ import java.util.zip.ZipFile
 import javax.imageio.ImageIO
 import org.apache.commons.io.IOUtils
 import org.apache.commons.lang.StringUtils
+import static extension org.apache.commons.lang.StringUtils.*;
 import org.junit.Test
 import org.webboards.vassal.Board
 import org.webboards.vassal.Grid
@@ -38,9 +39,10 @@ class Importer {
 		System.exit(0);
 	}
 
-	val modPath = "/home/rzymek/devel/github/vassal-import/Bastogne_v1_3.vmod" -> 'bastogne';
+//	val modPath = "/home/rzymek/devel/github/vassal-import/Bastogne_v1_3.vmod" -> 'bastogne';
+//	val modPath = "/home/rzymek/Dropbox/devel/board/pieklo-na-pacyfiku/seelowe.vmod" -> 'seelowe';
+	val modPath = "/home/rzymek/devel/github/vassal-import/RedWinter_v1.1b06.vmod" -> 'red-winter';
 
-	//	val modPath = "/home/rzymek/devel/github/vassal-import/RedWinter_v1.1b06.vmod" -> 'red-winer';
 	@Test
 	def void vsav() {
 		println("Web-Boards Vassal Importer...")
@@ -62,25 +64,30 @@ class Importer {
 		module.pieces = mod.recurse(ListWidget).map [ list |
 			new Pieces() => [
 				it.category = list.getAttributeValueString("entryName")
-				it.list = list.recurse(PieceSlot).map[piece].map [ piece |
-					new Piece() => [
+				it.list = list.recurse(PieceSlot).map[piece]
+					.map [ piece | new Piece() => [
 						it.name = piece.name
-						it.images = piece.images
+						it.images = piece.images.filter[!blank]
 					]
 				].toList
 			]
 		].filter[!list.empty].toList
-		module.board = mod.recurse(Map).filter[mapName == 'Main Map'].map[boardPicker.configureComponents].map[
-			Arrays::asList(it)].flatten.filter(typeof(VASSAL.build.module.map.boardPicker.Board)).map [ board |
-			new Board() => [
-				it.image = board.fileName
-				it.width = board.size.width
-				it.height = board.size.height
-				it.grid = board.grid?.convert
-			]
-		].head
+		module.board = mod.recurse(Map)
+			.filter[mapName == 'Main Map']
+			.map[boardPicker.configureComponents]
+			.map[
+				Arrays::asList(it)].flatten.filter(typeof(VASSAL.build.module.map.boardPicker.Board))
+				.map [ board | new Board() => [
+					it.image = board.fileName
+					it.width = board.size.width
+					it.height = board.size.height
+					it.grid = board.grid?.convert
+				]
+			].head
 		val archive = new ZipFile(modPath.key);
-		var maxCounterSize = module.pieces.map[list.map[images.map[getImageSize(it, archive)].filterNull].flatten].flatten
+		var maxCounterSize = module.pieces.map[list.map[images
+			.map[getImageSize(it, archive)].filterNull
+		].flatten].flatten
 			.fold(new Dimension(0,0), [r,t|
 				new Dimension(
 					Math.max(r.width, t.width),
@@ -89,7 +96,9 @@ class Importer {
 			])
 		module.counterDim = maxCounterSize;	
 			
-		bastogne(module)
+//		bastogne(module)
+//		seelowe(module)
+		
 		val json = gson.toJson(module);
 		val target = new File(OUT_BASE, modPath.value) => [mkdirs];
 		Files.write(
@@ -100,25 +109,34 @@ class Importer {
 		println(json);
 	}
 	
+	def seelowe(Module module) {
+		module.counterDim.width = 80;
+		module.counterDim.height = 80;
+	}
+	
 	def getImageSize(String filename, ZipFile archive) {
-		val entry = archive.getEntry('images/'+filename)	
-		val in = ImageIO::createImageInputStream(archive.getInputStream(entry));
-		if(in == null)
-			return null;  
 		try {
-			val readers = ImageIO::getImageReaders(in);
-			if(readers.hasNext()) {
-				val reader = readers.next
-				reader.input = in;
-				return new Dimension(
-					reader.getWidth(0),
-					reader.getHeight(0)
-				);
-			} else {
-				throw new RuntimeException("can't read "+filename);
+			val entry = archive.getEntry('images/'+filename)	
+			val in = ImageIO::createImageInputStream(archive.getInputStream(entry));
+			if(in == null)
+				return null;  
+			try {
+				val readers = ImageIO::getImageReaders(in);
+				if(readers.hasNext()) {
+					val reader = readers.next
+					reader.input = in;
+					return new Dimension(
+						reader.getWidth(0),
+						reader.getHeight(0)
+					);
+				} else {
+					throw new RuntimeException("can't read "+filename);
+				}
+			} finally {
+				in.close();
 			}
-		} finally {
-			in.close();
+		}catch(Exception ex){
+			throw new RuntimeException(filename+": "+archive, ex);			
 		}
 	}
 
