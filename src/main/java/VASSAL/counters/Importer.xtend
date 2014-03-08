@@ -8,6 +8,7 @@ import VASSAL.build.module.map.boardPicker.board.HexGrid
 import VASSAL.build.module.map.boardPicker.board.MapGrid
 import VASSAL.build.module.map.boardPicker.board.ZonedGrid
 import VASSAL.build.widget.ListWidget
+import VASSAL.build.widget.PanelWidget
 import VASSAL.build.widget.PieceSlot
 import com.google.common.collect.Iterables
 import com.google.common.io.Files
@@ -20,10 +21,13 @@ import java.io.FileReader
 import java.io.InputStream
 import java.nio.charset.StandardCharsets
 import java.util.Arrays
+import java.util.Collections
+import java.util.regex.Pattern
 import java.util.zip.ZipFile
 import javax.imageio.ImageIO
 import org.apache.commons.io.IOUtils
 import org.apache.commons.lang.StringUtils
+import org.junit.Ignore
 import org.junit.Test
 import org.webboards.vassal.Board
 import org.webboards.vassal.Grid
@@ -46,14 +50,15 @@ class Importer {
 
 //	val modPath = "/home/rzymek/devel/github/vassal-import/Bastogne_v1_3.vmod" -> 'bastogne';
 //	val modPath = "/home/rzymek/Dropbox/devel/board/pieklo-na-pacyfiku/seelowe.vmod" -> 'seelowe';
-	val modPath = "/home/rzymek/devel/github/vassal-import/RedWinter_v1.1b06.vmod" -> 'red-winter';
+//	val modPath = "/home/rzymek/devel/github/vassal-import/RedWinter_v1.1b06.vmod" -> 'red-winter';
 //	val modPath = "/home/rzymek/devel/github/vassal-import/Afrika_II_v0.9.vmod" -> 'africa2';
+	val modPath = "/home/rzymek/games/mods/BattleforMoscow.vmod" -> 'battle-for-moscow'
 
 	@Test
+	@Ignore
 	def void vsav() {
 		println("Web-Boards Vassal Importer...")
-		val mod = ModuleLoader.instace.load(modPath.key)
-		
+		val mod = ModuleLoader.instace.load(modPath.key)		
 		val f = 'b/savedGame';
 		val in = new BufferedReader(new FileReader(f));
 		val ds = IOUtils.toString(in);
@@ -74,16 +79,23 @@ class Importer {
 					it.list = list.toPieceList
 				]
 			].filter[!list.empty].toList
+		val panelWidget = mod.recurse(PanelWidget)
+			.map [ list |
+				new Pieces() => [
+					it.category = list.getAttributeValueString("entryName")
+					it.list = list.toPieceList
+				]
+			].filter[!list.empty].toList
 		val setup = mod.recurse(SetupStack).map[stack|
 			new Pieces() => [
 				it.category = stack.configureName
 				it.list = stack.toPieceList
 			]
 		]
-		module.pieces = Iterables::concat(palette, setup)
+		module.pieces = palette.concat(setup).concat(panelWidget);
 		
 		module.board = mod.recurse(Map)
-			.filter[mapName == 'Main Map']
+//			.filter[mapName == 'Main Map']
 			.map[boardPicker.configureComponents]
 			.map[
 				Arrays::asList(it)].flatten.filter(typeof(VASSAL.build.module.map.boardPicker.Board))
@@ -121,6 +133,10 @@ class Importer {
 		copyImages(module, target, archive)
 	}
 	
+	def static <T> Iterable<T> concat(Iterable<T> a, Iterable<T> b) {
+		Iterables::concat(a,b);
+	}
+	
 	def copyImages(Module module, File targetDir, ZipFile archive) {
 		val target = new File(targetDir, 'images') => [mkdirs]
 		copyImage(archive, target, module.board.image);
@@ -130,8 +146,7 @@ class Importer {
 	}
 	
 	def copyImage(ZipFile archive, File targetDir, String filename) {
-		println(filename);
-		archive.get('images/'+filename).writeTo(new File(targetDir, filename))
+		archive.get('images',filename).writeTo(new File(targetDir, filename))
 	}
 	
 	def void writeTo(InputStream in, File file) {
@@ -143,9 +158,22 @@ class Importer {
 		}
 	}
 	
-	def get(ZipFile archive, String filename) {
-		archive.getInputStream(archive.getEntry(filename))
+	def findEntry(ZipFile archive, String dirName, String filename) {
+		val entry = archive.getEntry(dirName+'/'+filename)
+		if(entry != null) {
+			entry
+		}else{
+			//Sometimes (BattleForGermany.vmod) image names are without an extension
+			Collections::list(archive.entries).filter[
+				name.matches('''«Pattern::quote(dirName+'/'+filename)»[.].*''')
+			].head
+		}
+		
 	}
+	def get(ZipFile archive, String dirName, String filename) {
+		archive.getInputStream(findEntry(archive, dirName, filename))
+	}
+	
 	
 	def seelowe(Module module) {
 		module.counterDim.width = 80;
@@ -164,7 +192,7 @@ class Importer {
 
 	def getImageSize(String filename, ZipFile archive) {
 		try {
-			val in = ImageIO::createImageInputStream(archive.get('images/'+filename));
+			val in = ImageIO::createImageInputStream(archive.get('images',filename));
 			if(in == null)
 				return null;  
 			try {
@@ -183,7 +211,7 @@ class Importer {
 				in.close();
 			}
 		}catch(Exception ex){
-			throw new RuntimeException(filename+": "+archive, ex);			
+			throw new RuntimeException(filename+": "+archive.name, ex);			
 		}
 	}
 
